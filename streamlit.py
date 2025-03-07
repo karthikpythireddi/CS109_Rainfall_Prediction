@@ -57,7 +57,7 @@ def create_us_map(risk_dict):
     states = {"CA": "California", "OR": "Oregon", "WA": "Washington"}
     
     for state, full_name in states.items():
-        risk = risk_dict[state]
+        risk = risk_dict.get(state, 0)  # Default to 0 risk if not computed
         color = get_color(risk)
         
         # Filter GeoDataFrame for the specific state

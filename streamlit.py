@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import scipy.stats as stats
 import folium
+import geopandas as gpd
 from streamlit_folium import folium_static
 
 def load_data():
@@ -43,28 +44,30 @@ def compute_wildfire_risk(state, precipitation):
     return posterior_prob_high
 
 def create_us_map(risk_dict):
-    state_coords = {
-        "CA": [36.7783, -119.4179],
-        "OR": [43.8041, -120.5542],
-        "WA": [47.7511, -120.7401]
-    }
+    # Load US states GeoJSON
+    geojson_url = "https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json"
+    us_map = folium.Map(location=[40, -120], zoom_start=5)
     
-    m = folium.Map(location=[40, -120], zoom_start=5)
+    # Define risk-based color coding
+    def get_color(risk):
+        return "green" if risk <= 0.2 else "yellow" if risk <= 0.5 else "red"
     
-    for state, risk in risk_dict.items():
-        color = "green" if risk <= 0.2 else "yellow" if risk <= 0.5 else "red"
+    # Load GeoJSON for state boundaries
+    gdf = gpd.read_file(geojson_url)
+    states = {"CA": "California", "OR": "Oregon", "WA": "Washington"}
+    
+    for state, full_name in states.items():
+        risk = risk_dict[state]
+        color = get_color(risk)
         
-        folium.CircleMarker(
-            location=state_coords[state],
-            radius=10,
-            color=color,
-            fill=True,
-            fill_color=color,
-            fill_opacity=0.7,
-            popup=f"{state}: {risk:.2%} Wildfire Risk"
-        ).add_to(m)
+        # Filter GeoDataFrame for the specific state
+        state_geom = gdf[gdf["name"] == full_name]
+        folium.GeoJson(
+            state_geom,
+            style_function=lambda x, color=color: {"fillColor": color, "color": "black", "weight": 1, "fillOpacity": 0.5},
+        ).add_to(us_map)
     
-    return m
+    return us_map
 
 def main():
     st.title("Wildfire Risk Prediction using Bayesian Inference")

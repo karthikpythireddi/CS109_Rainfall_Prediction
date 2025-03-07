@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import scipy.stats as stats
+import scipy
+st.info(f"SciPy version: {scipy.__version__}")
 
 def load_data():
     file_path = "cleaned_precipitation_wildfires_ca_or_wa.csv"

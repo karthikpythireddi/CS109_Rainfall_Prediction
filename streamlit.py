@@ -57,13 +57,13 @@ def create_us_map(risk_dict):
     states = {"CA": "California", "OR": "Oregon", "WA": "Washington"}
     
     # Compute risk for all states using default precipitation
-    default_risk_dict = {s: compute_wildfire_risk(s, 50) for s in states.keys()}
+    risk_dict_full = {s: compute_wildfire_risk(s, 50) for s in states.keys()}
     for state in states.keys():
-        if state not in risk_dict:
-            risk_dict[state] = default_risk_dict[state]  # Assign default risk values
+        if state in risk_dict:
+            risk_dict_full[state] = risk_dict[state]  # Update selected state
     
     for state, full_name in states.items():
-        risk = risk_dict[state]
+        risk = risk_dict_full[state]
         color = get_color(risk)
         
         # Filter GeoDataFrame for the specific state

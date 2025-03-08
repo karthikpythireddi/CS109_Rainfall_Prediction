@@ -58,13 +58,15 @@ def create_us_map(risk_dict):
     
     for state, full_name in states.items():
         risk = risk_dict.get(state, 0)  # Ensure correct state-specific risk value
+        
+        # Ensure correct color assignment
         color = get_color(risk)
         
         # Filter GeoDataFrame for the specific state
         state_geom = gdf[gdf["name"] == full_name]
         folium.GeoJson(
             state_geom,
-            style_function=lambda x: {"fillColor": color, "color": "black", "weight": 1, "fillOpacity": 0.5},
+            style_function=lambda x, color=color: {"fillColor": color, "color": "black", "weight": 1, "fillOpacity": 0.5},
         ).add_to(us_map)
     
     return us_map

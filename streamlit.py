@@ -82,16 +82,21 @@ def main():
     precipitation = st.number_input(f"Enter expected precipitation for {state} (in inches):", min_value=0.0, step=0.1)
     
     if st.button("Predict Wildfire Risk"):
-        # Reset all states to 0 risk before computing new values
-        risk_dict = {s: 0 for s in ["CA", "OR", "WA"]}
-        
-        # Update only the selected state
+        # Initialize all states with their historical average precipitation instead of a fixed 50 inches
+        df = load_data()
+        historical_avg = {s: df[f"precipitation_{s.lower()}"].mean() for s in ["CA", "OR", "WA"]}
+
+        risk_dict = {s: compute_wildfire_risk(s, historical_avg[s]) for s in ["CA", "OR", "WA"]}
+
+        # Update only the selected state with user-provided precipitation
         risk_dict[state] = compute_wildfire_risk(state, precipitation)
-        
+
         st.success(f"The probability of a high wildfire year in {state} given {precipitation} inches of precipitation is: {risk_dict[state]:.2%}")
-        
+
         st.write("### Wildfire Risk Map for the Western US")
         folium_static(create_us_map(risk_dict))
+
+
 
 if __name__ == "__main__":
     main()

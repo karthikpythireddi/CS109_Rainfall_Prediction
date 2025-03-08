@@ -47,7 +47,7 @@ def create_us_map(risk_dict):
     # Load US states GeoJSON
     geojson_url = "https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json"
     us_map = folium.Map(location=[40, -120], zoom_start=5)
-    
+
     # Define risk-based color coding
     def get_color(risk):
         return "green" if risk < 0.2 else "yellow" if risk < 0.5 else "red"
@@ -55,13 +55,13 @@ def create_us_map(risk_dict):
     # Load GeoJSON for state boundaries
     gdf = gpd.read_file(geojson_url)
     states = {"CA": "California", "OR": "Oregon", "WA": "Washington"}
-    
+
+    color_dict = {}
+
     for state, full_name in states.items():
         risk = risk_dict[state]
         color = get_color(risk)
-
-        # ✅ Debug: Print risk-color mapping to check correctness
-        print(f"State: {state}, Risk: {risk:.2%}, Color: {color}")
+        color_dict[state] = {"Risk": f"{risk:.2%}", "Color": color}
 
         # Ensure valid GeoJSON filtering
         state_geom = gdf[gdf["name"].str.lower() == full_name.lower()]
@@ -70,8 +70,13 @@ def create_us_map(risk_dict):
                 state_geom,
                 style_function=lambda x: {"fillColor": color, "color": "black", "weight": 1, "fillOpacity": 0.5},
             ).add_to(us_map)
-    
+
+    # ✅ Debug: Display color assignments in UI
+    st.write("### 🎨 Debugging Info: State Colors")
+    st.json(color_dict)  # Displays colors applied to each state
+
     return us_map
+
 
 def main():
     st.title("Wildfire Risk Prediction using Bayesian Inference")
@@ -81,23 +86,24 @@ def main():
     precipitation = st.number_input(f"Enter expected precipitation for {state} (in inches):", min_value=0.0, step=0.1)
     
     if st.button("Predict Wildfire Risk"):
-        # Load data to extract historical averages
+        # Initialize all states with historical average precipitation instead of fixed values
         df = load_data()
         historical_avg = {s: df[f"precipitation_{s.lower()}"].mean() for s in ["CA", "OR", "WA"]}
-        
-        # Compute initial risk based on historical precipitation
+
         risk_dict = {s: compute_wildfire_risk(s, historical_avg[s]) for s in ["CA", "OR", "WA"]}
-        
-        # Update only the selected state with the user's input
+
+        # Update only the selected state with user-provided precipitation
         risk_dict[state] = compute_wildfire_risk(state, precipitation)
 
-        # ✅ Debug: Print risk values to check if they change
-        print(f"Updated Risk Values: {risk_dict}")
+        # ✅ Debug: Display risk values in Streamlit UI
+        st.write("### 🔍 Debugging Info: Wildfire Risk Values")
+        st.json(risk_dict)  # Displays risk values directly on the page
 
         st.success(f"The probability of a high wildfire year in {state} given {precipitation} inches of precipitation is: {risk_dict[state]:.2%}")
 
         st.write("### Wildfire Risk Map for the Western US")
         folium_static(create_us_map(risk_dict))
+
 
 
 if __name__ == "__main__":

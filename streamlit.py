@@ -41,7 +41,7 @@ def compute_wildfire_risk(state, precipitation):
     # Compute posterior probability (Bayes' theorem)
     posterior_prob_high = (likelihood_high * prior_prob_high) / evidence
     
-    return posterior_prob_high
+    return max(0.0, min(1.0, posterior_prob_high))  # Ensure probability stays within valid range
 
 def create_us_map(risk_dict):
     # Load US states GeoJSON
@@ -50,17 +50,15 @@ def create_us_map(risk_dict):
     
     # Define risk-based color coding
     def get_color(risk):
-        return "green" if risk <= 0.2 else "yellow" if risk <= 0.5 else "red"
+        return "green" if risk < 0.2 else "yellow" if risk < 0.5 else "red"
     
     # Load GeoJSON for state boundaries
     gdf = gpd.read_file(geojson_url)
     states = {"CA": "California", "OR": "Oregon", "WA": "Washington"}
     
-    # Compute risk for all states using default precipitation
+    # Ensure all states have risk values
     risk_dict_full = {s: compute_wildfire_risk(s, 50) for s in states.keys()}
-    for state in states.keys():
-        if state in risk_dict:
-            risk_dict_full[state] = risk_dict[state]  # Update selected state
+    risk_dict_full.update(risk_dict)
     
     for state, full_name in states.items():
         risk = risk_dict_full[state]
@@ -71,7 +69,7 @@ def create_us_map(risk_dict):
         if not state_geom.empty:
             folium.GeoJson(
                 state_geom,
-                style_function=lambda x: {"fillColor": color, "color": "black", "weight": 1, "fillOpacity": 0.5},
+                style_function=lambda x, color=color: {"fillColor": color, "color": "black", "weight": 1, "fillOpacity": 0.5},
             ).add_to(us_map)
     
     return us_map

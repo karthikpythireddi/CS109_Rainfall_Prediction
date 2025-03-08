@@ -56,10 +56,13 @@ def create_us_map(risk_dict):
     gdf = gpd.read_file(geojson_url)
     states = {"CA": "California", "OR": "Oregon", "WA": "Washington"}
     
+    new_risk_dict = risk_dict.copy()
+    for state in states.keys():
+        if state not in new_risk_dict:
+            new_risk_dict[state] = 0  # Default risk for unselected states
+    
     for state, full_name in states.items():
-        risk = risk_dict.get(state, 0)  # Ensure correct state-specific risk value
-        
-        # Ensure correct color assignment
+        risk = new_risk_dict[state]
         color = get_color(risk)
         
         # Filter GeoDataFrame for the specific state
@@ -75,23 +78,16 @@ def main():
     st.title("Wildfire Risk Prediction using Bayesian Inference")
     st.write("Enter the expected precipitation to estimate wildfire risk.")
     
-    if "risk_dict" not in st.session_state:
-        st.session_state.risk_dict = {"CA": 0, "OR": 0, "WA": 0}  # Reset stored risk values
-    
     state = st.selectbox("Select State", ["CA", "OR", "WA"])
     precipitation = st.number_input(f"Enter expected precipitation for {state} (in inches):", min_value=0.0, step=0.1)
     
     if st.button("Predict Wildfire Risk"):
-        # Reset risk values before each new calculation
-        st.session_state.risk_dict = {s: compute_wildfire_risk(s, 50) for s in ["CA", "OR", "WA"]}  # Default reference precipitation
+        risk_dict = {state: compute_wildfire_risk(state, precipitation)}  # Only update selected state
         
-        # Update only the selected state's risk
-        st.session_state.risk_dict[state] = compute_wildfire_risk(state, precipitation)
-        
-        st.success(f"The probability of a high wildfire year in {state} given {precipitation} inches of precipitation is: {st.session_state.risk_dict[state]:.2%}")
+        st.success(f"The probability of a high wildfire year in {state} given {precipitation} inches of precipitation is: {risk_dict[state]:.2%}")
         
         st.write("### Wildfire Risk Map for the Western US")
-        folium_static(create_us_map(st.session_state.risk_dict))
+        folium_static(create_us_map(risk_dict))
 
 if __name__ == "__main__":
     main()

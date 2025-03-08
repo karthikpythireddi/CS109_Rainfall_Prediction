@@ -56,20 +56,21 @@ def create_us_map(risk_dict):
     gdf = gpd.read_file(geojson_url)
     states = {"CA": "California", "OR": "Oregon", "WA": "Washington"}
     
-    new_risk_dict = risk_dict.copy()
+    # Compute risk for all states using default precipitation
+    default_risk_dict = {s: compute_wildfire_risk(s, 50) for s in states.keys()}
     for state in states.keys():
-        if state not in new_risk_dict:
-            new_risk_dict[state] = 0  # Default risk for unselected states
+        if state not in risk_dict:
+            risk_dict[state] = default_risk_dict[state]  # Assign default risk values
     
     for state, full_name in states.items():
-        risk = new_risk_dict[state]
+        risk = risk_dict[state]
         color = get_color(risk)
         
         # Filter GeoDataFrame for the specific state
         state_geom = gdf[gdf["name"] == full_name]
         folium.GeoJson(
             state_geom,
-            style_function=lambda x, color=color: {"fillColor": color, "color": "black", "weight": 1, "fillOpacity": 0.5},
+            style_function=lambda x: {"fillColor": color, "color": "black", "weight": 1, "fillOpacity": 0.5},
         ).add_to(us_map)
     
     return us_map
@@ -82,7 +83,7 @@ def main():
     precipitation = st.number_input(f"Enter expected precipitation for {state} (in inches):", min_value=0.0, step=0.1)
     
     if st.button("Predict Wildfire Risk"):
-        risk_dict = {state: compute_wildfire_risk(state, precipitation)}  # Only update selected state
+        risk_dict = {state: compute_wildfire_risk(state, precipitation)}  # Update only the selected state
         
         st.success(f"The probability of a high wildfire year in {state} given {precipitation} inches of precipitation is: {risk_dict[state]:.2%}")
         

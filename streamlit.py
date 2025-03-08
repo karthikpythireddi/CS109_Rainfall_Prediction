@@ -57,7 +57,7 @@ def create_us_map(risk_dict):
     states = {"CA": "California", "OR": "Oregon", "WA": "Washington"}
     
     # Reset risk values before updating
-    risk_dict_full = {s: compute_wildfire_risk(s, 50) for s in states.keys()}
+    risk_dict_full = {s: 0 for s in states.keys()}  # Set all states to default risk (0)
     risk_dict_full.update(risk_dict)  # Update with new predictions
     
     for state, full_name in states.items():
@@ -82,8 +82,8 @@ def main():
     precipitation = st.number_input(f"Enter expected precipitation for {state} (in inches):", min_value=0.0, step=0.1)
     
     if st.button("Predict Wildfire Risk"):
-        # Reset all states before computing new values
-        risk_dict = {s: compute_wildfire_risk(s, 50) for s in ["CA", "OR", "WA"]}
+        # Reset all states to 0 risk before computing new values
+        risk_dict = {s: 0 for s in ["CA", "OR", "WA"]}
         
         # Update only the selected state
         risk_dict[state] = compute_wildfire_risk(state, precipitation)

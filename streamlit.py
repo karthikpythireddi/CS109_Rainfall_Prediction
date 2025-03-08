@@ -57,14 +57,14 @@ def create_us_map(risk_dict):
     states = {"CA": "California", "OR": "Oregon", "WA": "Washington"}
     
     for state, full_name in states.items():
-        risk = risk_dict[state]  # Ensure correct state-specific risk value
+        risk = risk_dict.get(state, 0)  # Ensure correct state-specific risk value
         color = get_color(risk)
         
         # Filter GeoDataFrame for the specific state
         state_geom = gdf[gdf["name"] == full_name]
         folium.GeoJson(
             state_geom,
-            style_function=lambda x, risk=risk: {"fillColor": get_color(risk), "color": "black", "weight": 1, "fillOpacity": 0.5},
+            style_function=lambda x: {"fillColor": color, "color": "black", "weight": 1, "fillOpacity": 0.5},
         ).add_to(us_map)
     
     return us_map
@@ -73,17 +73,23 @@ def main():
     st.title("Wildfire Risk Prediction using Bayesian Inference")
     st.write("Enter the expected precipitation to estimate wildfire risk.")
     
+    if "risk_dict" not in st.session_state:
+        st.session_state.risk_dict = {"CA": 0, "OR": 0, "WA": 0}  # Reset stored risk values
+    
     state = st.selectbox("Select State", ["CA", "OR", "WA"])
     precipitation = st.number_input(f"Enter expected precipitation for {state} (in inches):", min_value=0.0, step=0.1)
     
     if st.button("Predict Wildfire Risk"):
-        previous_risks = {s: compute_wildfire_risk(s, 50) for s in ["CA", "OR", "WA"]}  # Use reference precipitation
-        previous_risks[state] = compute_wildfire_risk(state, precipitation)  # Update only selected state
+        # Reset risk values before each new calculation
+        st.session_state.risk_dict = {s: compute_wildfire_risk(s, 50) for s in ["CA", "OR", "WA"]}  # Default reference precipitation
         
-        st.success(f"The probability of a high wildfire year in {state} given {precipitation} inches of precipitation is: {previous_risks[state]:.2%}")
+        # Update only the selected state's risk
+        st.session_state.risk_dict[state] = compute_wildfire_risk(state, precipitation)
+        
+        st.success(f"The probability of a high wildfire year in {state} given {precipitation} inches of precipitation is: {st.session_state.risk_dict[state]:.2%}")
         
         st.write("### Wildfire Risk Map for the Western US")
-        folium_static(create_us_map(previous_risks))
+        folium_static(create_us_map(st.session_state.risk_dict))
 
 if __name__ == "__main__":
     main()

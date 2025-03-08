@@ -51,19 +51,18 @@ def create_us_map(risk_dict):
     # Define risk-based color coding
     def get_color(risk):
         return "green" if risk < 0.2 else "yellow" if risk < 0.5 else "red"
-    
+
     # Load GeoJSON for state boundaries
     gdf = gpd.read_file(geojson_url)
     states = {"CA": "California", "OR": "Oregon", "WA": "Washington"}
     
-    # Reset risk values before updating
-    risk_dict_full = {s: 0 for s in states.keys()}  # Set all states to default risk (0)
-    risk_dict_full.update(risk_dict)  # Update with new predictions
-    
     for state, full_name in states.items():
-        risk = risk_dict_full[state]
+        risk = risk_dict[state]
         color = get_color(risk)
-        
+
+        # ✅ Debug: Print risk-color mapping to check correctness
+        print(f"State: {state}, Risk: {risk:.2%}, Color: {color}")
+
         # Ensure valid GeoJSON filtering
         state_geom = gdf[gdf["name"].str.lower() == full_name.lower()]
         if not state_geom.empty:
@@ -82,20 +81,23 @@ def main():
     precipitation = st.number_input(f"Enter expected precipitation for {state} (in inches):", min_value=0.0, step=0.1)
     
     if st.button("Predict Wildfire Risk"):
-        # Initialize all states with their historical average precipitation instead of a fixed 50 inches
+        # Load data to extract historical averages
         df = load_data()
         historical_avg = {s: df[f"precipitation_{s.lower()}"].mean() for s in ["CA", "OR", "WA"]}
-
+        
+        # Compute initial risk based on historical precipitation
         risk_dict = {s: compute_wildfire_risk(s, historical_avg[s]) for s in ["CA", "OR", "WA"]}
-
-        # Update only the selected state with user-provided precipitation
+        
+        # Update only the selected state with the user's input
         risk_dict[state] = compute_wildfire_risk(state, precipitation)
+
+        # ✅ Debug: Print risk values to check if they change
+        print(f"Updated Risk Values: {risk_dict}")
 
         st.success(f"The probability of a high wildfire year in {state} given {precipitation} inches of precipitation is: {risk_dict[state]:.2%}")
 
         st.write("### Wildfire Risk Map for the Western US")
         folium_static(create_us_map(risk_dict))
-
 
 
 if __name__ == "__main__":

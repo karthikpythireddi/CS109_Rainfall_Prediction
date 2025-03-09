@@ -7,7 +7,6 @@ import geopandas as gpd
 import statsmodels.api as sm
 from streamlit_folium import st_folium
 import requests
-from streamlit_folium import folium_static
 
 def load_data():
     file_path = "cleaned_precipitation_wildfires_ca_or_wa.csv"
@@ -69,65 +68,32 @@ def predict_wildfire_count(state, precipitation):
     
     return int(round(predicted_wildfires))
 
-def create_us_map(risk_dict, wildfire_counts, user_selected_state):
-    geojson_url = "https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json"
-    us_map = folium.Map(location=[37.5, -119], zoom_start=5, width='100%', height='700px')
-    
-    def get_color(risk, state):
-        if state != user_selected_state:
-            return "gray"
-        return "green" if risk < 0.2 else "yellow" if risk < 0.5 else "red"
-    
-    gdf = gpd.read_file(geojson_url)
-    states = {"CA": "California", "OR": "Oregon", "WA": "Washington"}
-    
-    for state, full_name in states.items():
-        risk = risk_dict[state]
-        color = get_color(risk, state)
-        
-        state_geom = gdf[gdf["name"].str.lower() == full_name.lower()]
-        if not state_geom.empty:
-            folium.GeoJson(
-                state_geom,
-                style_function=lambda x, color=color: {"fillColor": color, "color": "black", "weight": 1, "fillOpacity": 0.5},
-            ).add_to(us_map)
-    
-    return us_map
-
 def main():
     st.set_page_config(page_title="Wildfire Risk Prediction", layout="wide")
-
+    
     st.title("🔥 Wildfire Risk & Prediction using Bayesian Inference & Poisson Regression")
     st.write("Enter the expected precipitation to estimate wildfire risk and number of wildfires.")
-    st.write("\n**Note:** States without user-input precipitation are shown in gray, based on historical data.")
-
+    
     state = st.selectbox("Select State", ["CA", "OR", "WA"])
     precipitation = st.number_input(f"🌧️ Enter expected precipitation for {state} (in inches):", min_value=0.0, step=0.1)
-
+    
     if st.button("🚀 Predict Wildfire Risk & Count"):
         df = load_data()
         historical_avg = {s: df[f"precipitation_{s.lower()}"].mean() for s in ["CA", "OR", "WA"]}
-
+        
         risk_dict = {s: compute_wildfire_risk(s, historical_avg[s]) for s in ["CA", "OR", "WA"]}
         wildfire_counts = {s: predict_wildfire_count(s, historical_avg[s]) for s in ["CA", "OR", "WA"]}
-
-        # Update only the selected state with user-provided precipitation
+        
         risk_dict[state] = compute_wildfire_risk(state, precipitation)
         wildfire_counts[state] = predict_wildfire_count(state, precipitation)
-
-        # **Set Background Based on Risk Level**
-        risk_level = risk_dict[state]
-        if risk_level < 0.2:
-            bg_image = "https://i.giphy.com/media/l41lUjUgLlG4ri5X6/giphy.gif"  # Rain effect
+        
+        if risk_dict[state] < 0.2:
+            bg_image = "https://i.giphy.com/media/l41lUjUgLlG4ri5X6/giphy.gif"  # Rain animation
             msg = "🌧️ Low wildfire risk! Enjoy the rain!"
-        elif risk_level < 0.5:
-            bg_image = "https://media.giphy.com/media/5VKbvrjxpVJCM/giphy.gif"  # Caution pulse
-            msg = "⚠️ Moderate wildfire risk! Stay cautious!"
         else:
             bg_image = "https://i.gifer.com/YZ5R.gif"  # Fire animation
             msg = "🔥 High wildfire risk! Stay prepared!"
-
-        # **Apply Background Image**
+        
         st.markdown(
             f"""
             <style>
@@ -145,7 +111,7 @@ def main():
                 }}
             </style>
             <div class="bg">
-                <h2>Wildfire Risk Level: {risk_level:.2%}</h2>
+                <h2>Wildfire Risk Level: {risk_dict[state]:.2%}</h2>
                 <p>{msg}</p>
             </div>
             """,
@@ -154,10 +120,6 @@ def main():
 
         st.success(f"**The probability of a high wildfire year in {state} given {precipitation} inches of precipitation is: {risk_dict[state]:.2%}**")
         st.success(f"🌲 Predicted number of wildfires in {state}: **{wildfire_counts[state]}**")
-
-        st.write("### 🗺️ Wildfire Risk & Count Map for the Western US")
-        folium_static(create_us_map(risk_dict, wildfire_counts, state))
-
 
 if __name__ == "__main__":
     main()

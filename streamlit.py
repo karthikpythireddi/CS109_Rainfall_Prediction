@@ -112,6 +112,9 @@ def main():
         risk_dict[state] = compute_wildfire_risk(state, precipitation)
         wildfire_counts[state] = predict_wildfire_count(state, precipitation)
         
+        animation_url = "https://assets10.lottiefiles.com/private_files/lf30_3fcp7vgv.json" if risk_dict[state] < 0.2 else "https://assets9.lottiefiles.com/packages/lf20_uo6cxmfj.json"
+        st_lottie(st_lottie.load_animation(animation_url), speed=1, width=400, height=400)
+        
         st.success(f"**The probability of a high wildfire year in {state} given {precipitation} inches of precipitation is: {risk_dict[state]:.2%}**")
         st.success(f"🌲 Predicted number of wildfires in {state}: **{wildfire_counts[state]}**")
         

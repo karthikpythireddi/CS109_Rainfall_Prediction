@@ -75,11 +75,13 @@ def predict_wildfire_count(state, precipitation):
     
     return int(round(predicted_wildfires))
 
-def create_us_map(risk_dict, wildfire_counts):
+def create_us_map(risk_dict, wildfire_counts, user_selected_state):
     geojson_url = "https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json"
     us_map = folium.Map(location=[40, -120], zoom_start=5)
 
-    def get_color(risk):
+    def get_color(risk, state):
+        if state != user_selected_state:
+            return "gray"  # Show historical data states in gray
         return "green" if risk < 0.2 else "yellow" if risk < 0.5 else "red"
 
     gdf = gpd.read_file(geojson_url)
@@ -87,7 +89,7 @@ def create_us_map(risk_dict, wildfire_counts):
 
     for state, full_name in states.items():
         risk = risk_dict[state]
-        color = get_color(risk)
+        color = get_color(risk, state)
         
         state_geom = gdf[gdf["name"].str.lower() == full_name.lower()]
         if not state_geom.empty:
@@ -107,6 +109,7 @@ def create_us_map(risk_dict, wildfire_counts):
 def main():
     st.title("Wildfire Risk & Prediction using Bayesian Inference & Poisson Regression")
     st.write("Enter the expected precipitation to estimate wildfire risk and number of wildfires.")
+    st.write("\n**Note:** States without user-input precipitation are shown in gray, based on historical data.")
     
     state = st.selectbox("Select State", ["CA", "OR", "WA"])
     precipitation = st.number_input(f"Enter expected precipitation for {state} (in inches):", min_value=0.0, step=0.1)
@@ -126,7 +129,7 @@ def main():
         st.success(f"Predicted number of wildfires in {state}: {wildfire_counts[state]}")
         
         st.write("### Wildfire Risk & Count Map for the Western US")
-        folium_static(create_us_map(risk_dict, wildfire_counts))
+        folium_static(create_us_map(risk_dict, wildfire_counts, state))
 
 if __name__ == "__main__":
     main()

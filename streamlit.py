@@ -7,6 +7,14 @@ import geopandas as gpd
 import statsmodels.api as sm
 import streamlit_lottie as st_lottie
 from streamlit_folium import folium_static
+import requests
+
+def load_lottie_url(url):
+    response = requests.get(url)
+    if response.status_code != 200:
+        return None
+    return response.json()
+
 
 def load_data():
     file_path = "cleaned_precipitation_wildfires_ca_or_wa.csv"
@@ -112,7 +120,8 @@ def main():
         risk_dict[state] = compute_wildfire_risk(state, precipitation)
         wildfire_counts[state] = predict_wildfire_count(state, precipitation)
 
-        # **Set Animation Based on Risk Level**
+
+
         if risk_dict[state] < 0.2:
             animation_url = "https://assets10.lottiefiles.com/private_files/lf30_3fcp7vgv.json"  # Rain animation
             msg = "🌧️ Low wildfire risk! Enjoy the rain!"
@@ -120,8 +129,11 @@ def main():
             animation_url = "https://assets9.lottiefiles.com/packages/lf20_uo6cxmfj.json"  # Fire animation
             msg = "🔥 High wildfire risk! Stay prepared!"
 
-        # ✅ **Fix: Load Lottie animation correctly**
-        st_lottie(animation_url, speed=1, width=400, height=400)
+        animation_data = load_lottie_url(animation_url)
+        
+        if animation_data:
+            st_lottie(animation_data, speed=1, width=400, height=400)
+
 
         st.success(f"**The probability of a high wildfire year in {state} given {precipitation} inches of precipitation is: {risk_dict[state]:.2%}**")
         st.success(f"🌲 Predicted number of wildfires in {state}: **{wildfire_counts[state]}**")

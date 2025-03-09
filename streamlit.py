@@ -145,8 +145,8 @@ def main():
         st.success(f"Predicted number of wildfires in {state}: {wildfire_counts[state]}")
 
         # Display Giphy in Center
-        giphy_url = get_giphy_url(risk_dict[state])
-        st.image(giphy_url, width=400)
+        # giphy_url = get_giphy_url(risk_dict[state])
+        # st.image(giphy_url, width=400)
 
         st.write("### 🗺️ Wildfire Risk & Count Map for the Western US")
         folium_static(create_us_map(risk_dict, wildfire_counts, state))

@@ -92,6 +92,13 @@ def create_us_map(risk_dict, wildfire_counts, user_selected_state):
                 style_function=lambda x, color=color: {"fillColor": color, "color": "black", "weight": 1, "fillOpacity": 0.5},
             ).add_to(us_map)
 
+            # Add wildfire count marker to the respective state
+            folium.Marker(
+                location=state_geom.geometry.centroid.iloc[0].coords[:][0][::-1],
+                popup=f"{state}: {wildfire_counts[state]} predicted wildfires",
+                icon=folium.Icon(color="blue")
+            ).add_to(us_map)
+
     return us_map
 
 # Fetch Real-Time Fire Alerts (Mock API)
@@ -106,11 +113,11 @@ def fetch_fire_alerts(state):
 # Select Giphy Based on Risk Level
 def get_giphy_url(risk_level):
     if risk_level < 0.2:
-        return "https://media.giphy.com/media/J1X4WwD6U6XMi/giphy.gif"  # Rain
+        return "https://media.giphy.com/media/road-rainy-Mgq7EMQUrhcvC/giphy.gif"  # Rain
     elif risk_level < 0.5:
         return "https://media.giphy.com/media/3o6ZsYg5pA8WbRwh60/giphy.gif"  # Warning
     else:
-        return "https://media.giphy.com/media/l1J9sqrVf4nmHBAPE/giphy.gif"  # Fire
+        return "https://media.giphy.com/media/5VKbvrjxpVJCM/giphy.gif"  # Fire
 
 # Main Function
 def main():

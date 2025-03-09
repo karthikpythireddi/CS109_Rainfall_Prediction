@@ -26,19 +26,23 @@ def compute_wildfire_risk(state, precipitation):
 
     # Compute likelihoods using normal distributions
     high_wildfire_data = df[df["wildfire_high"] == 1][precip_col]
+    low_wildfire_data = df[df["wildfire_high"] == 0][precip_col]
+
     mean_precip_high = high_wildfire_data.mean()
     std_precip_high = high_wildfire_data.std()
-    
-    low_wildfire_data = df[df["wildfire_high"] == 0][precip_col]
     mean_precip_low = low_wildfire_data.mean()
     std_precip_low = low_wildfire_data.std()
 
-    # Handle cases where std deviation is zero to prevent division errors
+    # Handle cases where std deviation is zero
     std_precip_high = std_precip_high if std_precip_high > 0 else 1
     std_precip_low = std_precip_low if std_precip_low > 0 else 1
 
     likelihood_high = stats.norm.pdf(precipitation, mean_precip_high, std_precip_high)
     likelihood_low = stats.norm.pdf(precipitation, mean_precip_low, std_precip_low)
+
+    # Normalize likelihoods to prevent extreme probabilities
+    likelihood_high = max(likelihood_high, 1e-6)
+    likelihood_low = max(likelihood_low, 1e-6)
 
     # Compute total probability (evidence)
     prior_prob_low = 1 - prior_prob_high
@@ -47,14 +51,16 @@ def compute_wildfire_risk(state, precipitation):
     # Compute posterior probability (Bayes' theorem)
     posterior_prob_high = (likelihood_high * prior_prob_high) / evidence
 
-    # ✅ Debug: Log risk calculations
+    # ✅ Debugging: Show how precipitation affects wildfire risk
     st.write(f"🔍 Debug - {state}:")
+    st.write(f"Precipitation Input: {precipitation}")
     st.write(f"Mean Precip (High Wildfire Years): {mean_precip_high}, Std Dev: {std_precip_high}")
     st.write(f"Mean Precip (Low Wildfire Years): {mean_precip_low}, Std Dev: {std_precip_low}")
     st.write(f"Likelihood High: {likelihood_high}, Likelihood Low: {likelihood_low}")
     st.write(f"Computed Wildfire Risk: {posterior_prob_high:.2%}")
 
     return max(0.0, min(1.0, posterior_prob_high))  # Ensure valid probability range
+
 
 
 def create_us_map(risk_dict):

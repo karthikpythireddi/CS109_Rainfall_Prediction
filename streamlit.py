@@ -75,6 +75,35 @@ def predict_wildfire_count(state, precipitation):
     
     return int(round(predicted_wildfires))
 
+def create_us_map(risk_dict, wildfire_counts):
+    geojson_url = "https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json"
+    us_map = folium.Map(location=[40, -120], zoom_start=5)
+
+    def get_color(risk):
+        return "green" if risk < 0.2 else "yellow" if risk < 0.5 else "red"
+
+    gdf = gpd.read_file(geojson_url)
+    states = {"CA": "California", "OR": "Oregon", "WA": "Washington"}
+
+    for state, full_name in states.items():
+        risk = risk_dict[state]
+        color = get_color(risk)
+        
+        state_geom = gdf[gdf["name"].str.lower() == full_name.lower()]
+        if not state_geom.empty:
+            folium.GeoJson(
+                state_geom,
+                style_function=lambda x, color=color: {"fillColor": color, "color": "black", "weight": 1, "fillOpacity": 0.5},
+            ).add_to(us_map)
+
+            folium.Marker(
+                location=state_geom.geometry.centroid.iloc[0].coords[:][0][::-1],
+                popup=f"{state}: {wildfire_counts[state]} predicted wildfires",
+                icon=folium.Icon(color="blue")
+            ).add_to(us_map)
+    
+    return us_map
+
 def main():
     st.title("Wildfire Risk & Prediction using Bayesian Inference & Poisson Regression")
     st.write("Enter the expected precipitation to estimate wildfire risk and number of wildfires.")
@@ -87,13 +116,17 @@ def main():
         historical_avg = {s: df[f"precipitation_{s.lower()}"].mean() for s in ["CA", "OR", "WA"]}
         
         risk_dict = {s: compute_wildfire_risk(s, historical_avg[s]) for s in ["CA", "OR", "WA"]}
+        wildfire_counts = {s: predict_wildfire_count(s, historical_avg[s]) for s in ["CA", "OR", "WA"]}
         
         # Update only the selected state with user-provided precipitation
         risk_dict[state] = compute_wildfire_risk(state, precipitation)
-        predicted_wildfires = predict_wildfire_count(state, precipitation)
+        wildfire_counts[state] = predict_wildfire_count(state, precipitation)
         
         st.success(f"The probability of a high wildfire year in {state} given {precipitation} inches of precipitation is: {risk_dict[state]:.2%}")
-        st.success(f"Predicted number of wildfires in {state}: {predicted_wildfires}")
+        st.success(f"Predicted number of wildfires in {state}: {wildfire_counts[state]}")
+        
+        st.write("### Wildfire Risk & Count Map for the Western US")
+        folium_static(create_us_map(risk_dict, wildfire_counts))
 
 if __name__ == "__main__":
     main()

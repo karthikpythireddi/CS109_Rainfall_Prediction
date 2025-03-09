@@ -107,29 +107,86 @@ def create_us_map(risk_dict, wildfire_counts, user_selected_state):
     return us_map
 
 def main():
-    st.title("Wildfire Risk & Prediction using Bayesian Inference & Poisson Regression")
+    st.set_page_config(page_title="Wildfire Risk Prediction", layout="wide")
+
+    st.title("🔥 Wildfire Risk & Prediction using Bayesian Inference & Poisson Regression")
     st.write("Enter the expected precipitation to estimate wildfire risk and number of wildfires.")
     st.write("\n**Note:** States without user-input precipitation are shown in gray, based on historical data.")
-    
+
     state = st.selectbox("Select State", ["CA", "OR", "WA"])
-    precipitation = st.number_input(f"Enter expected precipitation for {state} (in inches):", min_value=0.0, step=0.1)
-    
-    if st.button("Predict Wildfire Risk & Count"):
+    precipitation = st.number_input(f"🌧️ Enter expected precipitation for {state} (in inches):", min_value=0.0, step=0.1)
+
+    if st.button("🚀 Predict Wildfire Risk & Count"):
         df = load_data()
         historical_avg = {s: df[f"precipitation_{s.lower()}"].mean() for s in ["CA", "OR", "WA"]}
-        
+
         risk_dict = {s: compute_wildfire_risk(s, historical_avg[s]) for s in ["CA", "OR", "WA"]}
         wildfire_counts = {s: predict_wildfire_count(s, historical_avg[s]) for s in ["CA", "OR", "WA"]}
-        
+
         # Update only the selected state with user-provided precipitation
         risk_dict[state] = compute_wildfire_risk(state, precipitation)
         wildfire_counts[state] = predict_wildfire_count(state, precipitation)
-        
-        st.success(f"The probability of a high wildfire year in {state} given {precipitation} inches of precipitation is: {risk_dict[state]:.2%}")
-        st.success(f"Predicted number of wildfires in {state}: {wildfire_counts[state]}")
-        
-        st.write("### Wildfire Risk & Count Map for the Western US")
+
+        # **Animation Effect Based on Risk Level**
+        risk_level = risk_dict[state]
+        if risk_level < 0.2:
+            bg_color = "green"
+            animation = "rain-animation"
+            msg = "✅ Low wildfire risk! The rain effect indicates a safe year."
+        elif risk_level < 0.5:
+            bg_color = "yellow"
+            animation = "pulse-glow"
+            msg = "⚠️ Moderate wildfire risk! Be cautious."
+        else:
+            bg_color = "red"
+            animation = "fire-animation"
+            msg = "🔥 High wildfire risk! Stay prepared!"
+
+        # **Apply CSS Animation**
+        st.markdown(
+            f"""
+            <style>
+                .animated-box {{
+                    width: 100%;
+                    padding: 20px;
+                    text-align: center;
+                    background-color: {bg_color};
+                    color: white;
+                    border-radius: 10px;
+                    animation: {animation} 2s infinite;
+                }}
+
+                @keyframes rain-animation {{
+                    0% {{ background-image: url('https://upload.wikimedia.org/wikipedia/commons/3/3b/Rain_animation.gif'); }}
+                    100% {{ background-image: url('https://upload.wikimedia.org/wikipedia/commons/3/3b/Rain_animation.gif'); }}
+                }}
+
+                @keyframes pulse-glow {{
+                    0% {{ box-shadow: 0px 0px 10px yellow; }}
+                    50% {{ box-shadow: 0px 0px 20px orange; }}
+                    100% {{ box-shadow: 0px 0px 10px yellow; }}
+                }}
+
+                @keyframes fire-animation {{
+                    0% {{ background-color: red; }}
+                    50% {{ background-color: darkred; }}
+                    100% {{ background-color: red; }}
+                }}
+            </style>
+            <div class="animated-box">
+                <h2>🔥 Wildfire Risk Level: {risk_level:.2%}</h2>
+                <p>{msg}</p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        st.success(f"**The probability of a high wildfire year in {state} given {precipitation} inches of precipitation is: {risk_dict[state]:.2%}**")
+        st.success(f"🌲 Predicted number of wildfires in {state}: **{wildfire_counts[state]}**")
+
+        st.write("### 🗺️ Wildfire Risk & Count Map for the Western US")
         folium_static(create_us_map(risk_dict, wildfire_counts, state))
+
 
 if __name__ == "__main__":
     main()

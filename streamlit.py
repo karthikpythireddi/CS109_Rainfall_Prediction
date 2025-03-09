@@ -11,7 +11,6 @@ def load_data():
     df = pd.read_csv(file_path)
     return df
 
-
 def compute_wildfire_risk(state, precipitation):
     df = load_data()
 
@@ -37,8 +36,9 @@ def compute_wildfire_risk(state, precipitation):
     std_precip_high = std_precip_high if std_precip_high > 0 else 1
     std_precip_low = std_precip_low if std_precip_low > 0 else 1
 
-    likelihood_high = stats.norm.pdf(precipitation, mean_precip_high, std_precip_high)
-    likelihood_low = stats.norm.pdf(precipitation, mean_precip_low, std_precip_low)
+    # Adjust likelihoods to correctly reflect that high precipitation reduces wildfire risk
+    likelihood_high = 1 - stats.norm.cdf(precipitation, mean_precip_high, std_precip_high)
+    likelihood_low = stats.norm.cdf(precipitation, mean_precip_low, std_precip_low)
 
     # Normalize likelihoods to prevent extreme probabilities
     likelihood_high = max(likelihood_high, 1e-6)
@@ -60,7 +60,6 @@ def compute_wildfire_risk(state, precipitation):
     st.write(f"Computed Wildfire Risk: {posterior_prob_high:.2%}")
 
     return max(0.0, min(1.0, posterior_prob_high))  # Ensure valid probability range
-
 
 
 def create_us_map(risk_dict):

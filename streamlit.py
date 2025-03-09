@@ -58,12 +58,20 @@ def compute_wildfire_risk(state, precipitation):
 
 
 def create_us_map(risk_dict):
+    # Load US states GeoJSON
     geojson_url = "https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json"
     us_map = folium.Map(location=[40, -120], zoom_start=5)
 
+    # Define risk-based color coding
     def get_color(risk):
-        return "green" if risk < 0.2 else "yellow" if risk < 0.5 else "red"
+        if risk < 0.2:
+            return "green"
+        elif risk < 0.5:
+            return "yellow"
+        else:
+            return "red"
 
+    # Load GeoJSON for state boundaries
     gdf = gpd.read_file(geojson_url)
     states = {"CA": "California", "OR": "Oregon", "WA": "Washington"}
 
@@ -71,18 +79,22 @@ def create_us_map(risk_dict):
 
     for state, full_name in states.items():
         risk = risk_dict[state]
-        color = get_color(risk)
-        color_dict[state] = {"Risk": f"{risk:.2%}", "Color": color}
+        assigned_color = get_color(risk)
+
+        # ✅ Debug: Display state risk & assigned color
+        st.write(f"**{state}: Risk = {risk:.2%}, Assigned Color = {assigned_color}**")
+
+        color_dict[state] = {"Risk": f"{risk:.2%}", "Color": assigned_color}
 
         # Ensure valid GeoJSON filtering
         state_geom = gdf[gdf["name"].str.lower() == full_name.lower()]
         if not state_geom.empty:
             folium.GeoJson(
                 state_geom,
-                style_function=lambda x: {"fillColor": color, "color": "black", "weight": 1, "fillOpacity": 0.5},
+                style_function=lambda x, color=assigned_color: {"fillColor": color, "color": "black", "weight": 1, "fillOpacity": 0.5},
             ).add_to(us_map)
 
-    # ✅ Debug: Display color assignments in UI
+    # ✅ Display the final risk-color mapping
     st.write("### 🎨 Debugging Info: State Colors")
     st.json(color_dict)
 

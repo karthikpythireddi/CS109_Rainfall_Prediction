@@ -127,54 +127,37 @@ def main():
         risk_dict[state] = compute_wildfire_risk(state, precipitation)
         wildfire_counts[state] = predict_wildfire_count(state, precipitation)
 
-        # **Animation Effect Based on Risk Level**
+        # **Set Background Based on Risk Level**
         risk_level = risk_dict[state]
         if risk_level < 0.2:
-            bg_color = "green"
-            animation = "rain-animation"
-            msg = "✅ Low wildfire risk! The rain effect indicates a safe year."
+            bg_image = "https://i.giphy.com/media/l41lUjUgLlG4ri5X6/giphy.gif"  # Rain effect
+            msg = "🌧️ Low wildfire risk! Enjoy the rain!"
         elif risk_level < 0.5:
-            bg_color = "yellow"
-            animation = "pulse-glow"
-            msg = "⚠️ Moderate wildfire risk! Be cautious."
+            bg_image = "https://media.giphy.com/media/5VKbvrjxpVJCM/giphy.gif"  # Caution pulse
+            msg = "⚠️ Moderate wildfire risk! Stay cautious!"
         else:
-            bg_color = "red"
-            animation = "fire-animation"
+            bg_image = "https://i.gifer.com/YZ5R.gif"  # Fire animation
             msg = "🔥 High wildfire risk! Stay prepared!"
 
-        # **Apply CSS Animation**
+        # **Apply Background Image**
         st.markdown(
             f"""
             <style>
-                .animated-box {{
-                    width: 100%;
-                    padding: 20px;
+                .bg {{
+                    background-image: url("{bg_image}");
+                    background-size: cover;
+                    background-repeat: no-repeat;
+                    background-attachment: fixed;
+                    height: 300px;
                     text-align: center;
-                    background-color: {bg_color};
+                    padding: 20px;
                     color: white;
+                    font-size: 24px;
                     border-radius: 10px;
-                    animation: {animation} 2s infinite;
-                }}
-
-                @keyframes rain-animation {{
-                    0% {{ background-image: url('https://upload.wikimedia.org/wikipedia/commons/3/3b/Rain_animation.gif'); }}
-                    100% {{ background-image: url('https://upload.wikimedia.org/wikipedia/commons/3/3b/Rain_animation.gif'); }}
-                }}
-
-                @keyframes pulse-glow {{
-                    0% {{ box-shadow: 0px 0px 10px yellow; }}
-                    50% {{ box-shadow: 0px 0px 20px orange; }}
-                    100% {{ box-shadow: 0px 0px 10px yellow; }}
-                }}
-
-                @keyframes fire-animation {{
-                    0% {{ background-color: red; }}
-                    50% {{ background-color: darkred; }}
-                    100% {{ background-color: red; }}
                 }}
             </style>
-            <div class="animated-box">
-                <h2>🔥 Wildfire Risk Level: {risk_level:.2%}</h2>
+            <div class="bg">
+                <h2>Wildfire Risk Level: {risk_level:.2%}</h2>
                 <p>{msg}</p>
             </div>
             """,
@@ -186,6 +169,7 @@ def main():
 
         st.write("### 🗺️ Wildfire Risk & Count Map for the Western US")
         folium_static(create_us_map(risk_dict, wildfire_counts, state))
+
 
 
 if __name__ == "__main__":

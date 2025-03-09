@@ -20,11 +20,11 @@ def compute_wildfire_risk(state, precipitation):
     
     precip_col = f"precipitation_{state.lower()}"
     wildfire_col = f"wildfires_{state.lower()}"
-    
+
     wildfire_threshold = df[wildfire_col].median()
     df["wildfire_high"] = (df[wildfire_col] >= wildfire_threshold).astype(int)
     prior_prob_high = df["wildfire_high"].mean()
-    
+
     high_wildfire_data = df[df["wildfire_high"] == 1][precip_col]
     low_wildfire_data = df[df["wildfire_high"] == 0][precip_col]
 
@@ -103,26 +103,14 @@ def fetch_fire_alerts(state):
     }
     return fire_alerts_mock.get(state, "No fire alerts at this time.")
 
-# Apply Giphy Background Based on Risk Level
-def set_background(risk_level):
+# Select Giphy Based on Risk Level
+def get_giphy_url(risk_level):
     if risk_level < 0.2:
-        bg_gif = "https://media.giphy.com/media/l0HlJ3PneWg1M5T8o/giphy.gif"  # Rain
+        return "https://media.giphy.com/media/J1X4WwD6U6XMi/giphy.gif"  # Rain
     elif risk_level < 0.5:
-        bg_gif = "https://media.giphy.com/media/3o6Zt481isNVuQI1l6/giphy.gif"  # Warning
+        return "https://media.giphy.com/media/3o6ZsYg5pA8WbRwh60/giphy.gif"  # Warning
     else:
-        bg_gif = "https://media.giphy.com/media/3o7TKU8RvQuomFfUUU/giphy.gif"  # Fire
-
-    st.markdown(
-        f"""
-        <style>
-        .stApp {{
-            background-image: url("{bg_gif}");
-            background-size: cover;
-        }}
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
+        return "https://media.giphy.com/media/l1J9sqrVf4nmHBAPE/giphy.gif"  # Fire
 
 # Main Function
 def main():
@@ -143,14 +131,15 @@ def main():
         risk_dict[state] = compute_wildfire_risk(state, precipitation)
         wildfire_counts[state] = predict_wildfire_count(state, precipitation)
 
-        # Apply Background
-        set_background(risk_dict[state])
-
         # Display Fire Alerts
         st.warning(fetch_fire_alerts(state))
 
         st.success(f"The probability of a high wildfire year in {state} given {precipitation} inches of precipitation is: {risk_dict[state]:.2%}")
         st.success(f"Predicted number of wildfires in {state}: {wildfire_counts[state]}")
+
+        # Display Giphy in Center
+        giphy_url = get_giphy_url(risk_dict[state])
+        st.image(giphy_url, width=400)
 
         st.write("### 🗺️ Wildfire Risk & Count Map for the Western US")
         folium_static(create_us_map(risk_dict, wildfire_counts, state))

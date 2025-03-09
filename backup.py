@@ -77,7 +77,7 @@ def predict_wildfire_count(state, precipitation):
 
 def create_us_map(risk_dict, wildfire_counts, user_selected_state):
     geojson_url = "https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json"
-    us_map = folium.Map(location=[37.5, -119], zoom_start=5, width='100%', height='700px')
+    us_map = folium.Map(location=[40, -120], zoom_start=5)
 
     def get_color(risk, state):
         if state != user_selected_state:

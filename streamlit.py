@@ -7,6 +7,7 @@ import geopandas as gpd
 import statsmodels.api as sm
 from streamlit_folium import st_folium
 import requests
+from streamlit_folium import folium_static
 
 def load_data():
     file_path = "cleaned_precipitation_wildfires_ca_or_wa.csv"

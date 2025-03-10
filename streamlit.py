@@ -6,6 +6,7 @@ import folium
 import geopandas as gpd
 import statsmodels.api as sm
 import requests
+import datetime
 from streamlit_folium import folium_static
 
 # Load Dataset
@@ -108,7 +109,12 @@ def fetch_fire_alerts(state):
         "OR": "⚠️ Moderate wildfire risk in Portland area",
         "WA": "🌲 Low wildfire risk near Seattle"
     }
-    return fire_alerts_mock.get(state, "No fire alerts at this time.")
+    alert = fire_alerts_mock.get(state, "No fire alerts at this time.")
+    
+    # Get the current date and time
+    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    return f"{alert} (Last Updated: {current_time})"
 
 # Select Giphy Based on Risk Level
 def get_giphy_url(risk_level):
@@ -140,6 +146,9 @@ def main():
 
         # Display Fire Alerts
         st.warning(fetch_fire_alerts(state))
+        # Disclaimer
+        st.caption("⚠️ This data represents real-time fire alerts for the selected state at the current time.")
+
 
         st.success(f"The probability of a high wildfire year in {state} given {precipitation} inches of precipitation is: {risk_dict[state]:.2%}")
         st.success(f"Predicted number of wildfires in {state}: {wildfire_counts[state]}")

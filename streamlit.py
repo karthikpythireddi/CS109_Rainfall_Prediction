@@ -145,9 +145,10 @@ def main():
         wildfire_counts[state] = predict_wildfire_count(state, precipitation)
 
         # Display Fire Alerts
+        st.caption("⚠️ This data represents real-time fire alerts for the selected state at the current time.")
         st.warning(fetch_fire_alerts(state))
         # Disclaimer
-        st.caption("⚠️ This data represents real-time fire alerts for the selected state at the current time.")
+        
 
 
         st.success(f"The probability of a high wildfire year in {state} given {precipitation} inches of precipitation is: {risk_dict[state]:.2%}")
